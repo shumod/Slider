@@ -1,0 +1,43 @@
+<?php
+// $Id$
+
+/**
+ * Implementation of hook_install().
+ */
+
+function ticknet_slider_install() {
+  drupal_install_schema('ticknet_slider');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+
+function ticknet_slider_uninstall() {
+  drupal_uninstall_schema('ticknet_slider');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+
+function ticknet_slider_schema() {
+  $schema['ticknet_slider_data'] = array(
+    'description' => t('Stores uploaded file information and table associations.'),
+    'fields' => array(
+      'eid'     => array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE),
+      'title'   => array('type' => 'varchar','length' => 255,'not null' => TRUE,'default' => '' ),
+      'body'    => array('type' => 'text','not null' => TRUE,'default' => ''),
+      'img_path'    => array('type' => 'text','not null' => TRUE,'default' => ''),
+      'url'     => array('type' => 'varchar','length' => 255,'not null' => TRUE,'default' => ''),
+      'fid'     => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'status'  => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'created' => array('type' => 'int', 'not null' => TRUE, 'default' => 0),
+      'weight'  => array('type' => 'int', 'not null' => TRUE, 'default' => 0,'size' => 'tiny')
+     ),
+    'primary key' => array('eid'),
+  );
+
+
+  return $schema;
+}

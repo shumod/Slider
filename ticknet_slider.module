@@ -1,0 +1,301 @@
+<?php
+
+// $Id$
+/* * ******************************************************************
+ * Constants
+ * ****************************************************************** */
+
+/* * ******************************************************************
+ * Drupal Hooks
+ * ****************************************************************** */
+function ticknet_slider_init() {
+    $data = variable_get('ts_setting', '');
+    if ($data == '') {
+        $data = array(
+            'width' => '628',
+            'height' => '218',
+            'button_width' => '95',
+            'bottom_height' => '45',
+            'timer' => 5000,
+            'opacity' => 6,
+            'buttonText' => 'GET TICKETS',
+        );
+        $setting = variable_set('ts_setting', $data);
+    }
+    $time = array(
+        'timer' => $data['timer']
+    );
+    drupal_add_js(array('ticknet_slider' => $time), 'setting');
+    drupal_add_js(drupal_get_path('module', 'ticknet_slider') . '/ticknet_slider.js');
+    drupal_add_css(drupal_get_path('module', 'ticknet_slider') . '/ticknet_slider.css');
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function ticknet_slider_perm() {
+    return array(
+        'admin ticknet_slider',
+        'view ticknet_slider',
+        'create ticknet_slider',
+        'edit own ticknet_slider',
+        'edit any ticknet_slider',
+        'delete own ticknet_slider',
+        'delete any ticknet_slider');
+}
+
+function ticknet_slider_access($op, $node, $account) {
+    $is_author = $account->uid == $node->uid;
+    switch ($op) {
+        case 'create':
+            // Allow if user's role has 'create arch' permission.
+            return user_access('create ticknet_slider', $account);
+        case 'update':
+            // Allow if user's role has 'edit own arch' permission and user is
+            // the author; or if the user's role has 'edit any arch' permission.
+            return user_access('edit own ticknet_slider', $account) && $is_author || user_access('edit any ticknet_slider', $account);
+        case 'view':
+            return user_access('view ticknet_slider', $account);
+        case 'delete':
+            // Allow if user's role has 'delete own arch' permission and user is
+            // the author; or if the user's role has 'delete any arch' permission.
+            return user_access('delete own ticknet_slider', $account) && $is_author || user_access('delete any ticknet_slider', $account);
+    }
+}
+
+/**
+ * Implementation of hook_theme()
+ */
+function ticknet_slider_theme() {
+    return array(
+        'ticknet_slider_list' => array(
+            'arguments' => array('form' => NULL),
+        ),
+        'ticknet_slider_block' => array(
+            'arguments' => array('image', 'body', 'button'),
+        ),
+    );
+}
+
+;
+
+/**
+ * Implementation of hook_block().
+ */
+function ticknet_slider_block($op = 'list', $delta = 0, $edit = array()) {
+    switch ($op) {
+        case 'list':
+            $block[0] = array('info' => t('Slider block'),
+                'weight' => 0,
+                'cache' => BLOCK_NO_CACHE,
+                'status' => 0,
+                'region' => 'none');
+            break;
+        case 'view':
+            switch ($delta) {
+                case 0:
+                    $block = array('subject' => '',
+                        'content' => ticknet_slider_showblock()
+                    );
+                    break;
+            }
+    }
+    return $block;
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function ticknet_slider_menu() {
+// Content title block
+    $items['admin/content/ticknet_slider'] = array(
+        'title' => 'Slider block',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('ticknet_slider_settings'),
+        'access arguments' => array('admin ticknet_slider'),
+        'description' => 'Configure and manage slider',
+        'file' => 'ticknet_slider.admin.inc',
+    );
+    $items['admin/content/ticknet_slider/settings'] = array(
+        'title' => 'Common Settings',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('ticknet_slider_settings'),
+        'access arguments' => array('admin ticknet_slider'),
+        'type' => MENU_DEFAULT_LOCAL_TASK,
+        'file' => 'ticknet_slider.admin.inc',
+        'weight' => 1,
+    );
+    $items['admin/content/ticknet_slider/list'] = array(
+        'title' => 'Pages list',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('ticknet_slider_list'),
+        'access arguments' => array('admin ticknet_slider'),
+        'type' => MENU_LOCAL_TASK,
+        'file' => 'ticknet_slider.admin.inc',
+        'weight' => 2,
+    );
+    $items['admin/content/ticknet_slider/add'] = array(
+        'title' => 'Add page',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('ticknet_slider_add'),
+        'access arguments' => array('admin ticknet_slider'),
+        'type' => MENU_LOCAL_TASK,
+        'file' => 'ticknet_slider.admin.inc',
+        'weight' => 3,
+    );
+    $items['admin/content/ticknet_slider/edit/%ticknet_slider_page'] = array(
+        'title' => 'Edit page',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('ticknet_slider_edit', 4),
+        'access arguments' => array('admin ticknet_slider'),
+        'type' => MENU_CALLBACK,
+        'file' => 'ticknet_slider.admin.inc',
+        'weight' => 4,
+    );
+    $items['reorder'] = array(
+        'title' => '',
+        'page callback' => 'ticknet_slider_order',
+        'access arguments' => array('admin ticknet_slider'),
+        'description' => 'Save row order in ticknet-slider\'s custom blocks',
+        'type' => MENU_CALLBACK,
+    );
+
+    return $items;
+}
+
+/* * ******************************************************************
+ * Hook load Functions
+ * ****************************************************************** */
+
+function ticknet_slider_page_load($eid) {
+    $eid = (int) $eid;
+    $page = db_fetch_object(db_query("SELECT * FROM {ticknet_slider_data} WHERE eid = '%d'", $eid));
+    return $page;
+}
+
+/* * ******************************************************************
+ * Other Functions
+ * ****************************************************************** */
+
+function ticknet_slider_view() {
+    $sql = "SELECT * FROM {ticknet_slider_data} WHERE status='%d' ORDER BY weight";
+    $result = db_query($sql, '1');
+    $block = array();
+    while ($row = db_fetch_object($result)) {
+        $block[$row->eid] = array('body' => $row->body, 'img' => $row->img_path, 'url' => $row->url, 'weight' => $row->weight);
+    }
+    return $block;
+}
+
+function ticknet_slider_showblock() {
+    $data = variable_get('ts_setting', '');
+    $time = $data['timer'];
+    drupal_add_js(array(
+        'ticknet_slider' => array(
+            'time' => $time,
+        )
+            ), 'setting');
+    $sliders = ticknet_slider_view();
+    $block = '';
+    $active = 'active ';
+    while (list(, $data) = each($sliders)) {
+        $block.=theme('ticknet_slider_block', $data['img'], $data['body'], $data['url'], $active, 'slide ');
+    }
+    return $block;
+}
+
+/* * ******************************************************************
+ * Functions theme
+ * ****************************************************************** */
+
+function theme_ticknet_slider_list($form) {
+    $core = array('cache_block');
+    $cache_tables = array_merge(module_invoke_all('flush_caches'), $core);
+    foreach ($cache_tables as $table) {
+        cache_clear_all('*', $table, TRUE);
+    }
+    $output = drupal_render($form['options']);
+    $header = array(theme('table_select_header_cell'), t('Status'), t('Operations'), t('Select'), theme('table_select_header_cell'));
+    drupal_add_tabledrag('ticknet-slider', 'order', 'sibling', 'list-weight');
+    $rows = array();
+    foreach (element_children($form) as $key) {
+        if (isset($form[$key]['eid'])) {
+            $event = &$form[$key];
+            $eid = $form[$key]['eid']['#value'];
+            $row = array();
+            $event['weight']['#attributes']['class'] = 'list-weight';
+            $row[] = '<div class="first-cell">' . drupal_render($event['title']) . '</div>';
+            $row[] = drupal_render($event['status']);
+            $row[] = drupal_render($event['edit']);
+            $row[] = drupal_render($form['pages'][$key]);
+            $row[] = drupal_render($event['weight']);
+            $rows[] = array('data' => $row, 'class' => 'draggable block-' . $eid);
+        }
+    }
+    if (empty($rows)) {
+        $rows[] = array(array('data' => t('No account available.'), 'colspan' => '3'));
+    }
+    $output .= theme('table', $header, $rows, array('id' => 'ticknet-slider', 'class' => 'main-block'));
+    $output .= drupal_render($form);
+    return $output;
+}
+
+function theme_ticknet_slider_block($image, $body, $button, $active='', $slide='') {
+    $slider_data = variable_get('ts_setting', '');
+    $row_width=40;
+    $row_height=54;
+    $opacity = (float) $slider_data['opacity'] * 0.1;
+    $width=$slider_data['width'].'px';
+    $height=$slider_data['height'].'px';
+    $button_width=$slider_data['button_width'];
+    $button_width==0? $b_style='style="display:none;"' : $b_style='style="width:'.$button_width.'px;"';
+    $body_width=((int)$width-(int)$button_width-24).'px';
+    $bottom_height=$slider_data['bottom_height'].'px';
+    $top_height=((int)$height-$row_height)/2;
+    $style='style="width:'.$width.';height:'.$height.';"';
+    $left_c=((int)$width-$row_width)/2;
+    $left_r=(int)$width-$row_width-2;
+    $height_row=((int)$height-2*(int)$bottom_height);
+    $style_l='style="width:'.$row_width.'px;height:'.$row_height.'px;left:2px;top:'.$top_height.'px;"';
+    $style_c='style="width:'.$row_height.'px;height:'.$row_height.'px;left:'.$left_c.'px;top:'.$top_height.'px;"';
+    $style_r='style="width:'.$row_width.'px;height:'.$row_height.'px;left:'.$left_r.'px;top:'.$top_height.'px;"';
+    $output = '<div class="' . $active . 'top-slider" '.$style.' >';
+    $output.='<div class="' . $slide . 'slider-image" '.$style.' >' . theme('image', $image, 'UMATAX™ IS TICKETS DUDE', 'UMATAX™ IS TICKETS DUDE', array('width' => $width, 'height' => $height), FALSE) . '</div>';
+    $output .= '<div class="row left-row" '.$style_l.'></div>';
+    $output .= '<div class="row center-row stop" '.$style_c.'></div>';
+    $output .= '<div class="row center-row start" '.$style_c.'></div>';
+    $output .= '<div class="row right-row" '.$style_r.'></div>';
+    $output.='<div class="' . $slide . 'bottom-background" style="opacity:' . $opacity . ';width:'.$width.';height:'.$bottom_height.';"></div>';
+    $output.='<div class="' . $slide . 'slider-bottom" style="width:'.$width.';height:'.$bottom_height.';"><div class="slider-body"  style="width:'.$body_width.';">' . $body . '</div>';
+    $output.='<div class="slider-button" '.$b_style.'>' . l('GET TICKETS', $button) . '</div>';
+    $output.='</div></div>';
+    return $output;
+}
+/**
+ * 
+ */
+function ticknet_slider_order() {
+    $l_weight = $_REQUEST['weights'];
+    $l_events = $_REQUEST['events'];
+    $weights = explode('%', $l_weight);
+    $events = explode('%', $l_events);
+    array_pop($weights);
+    array_pop($events);
+    $count = count($weights);
+    for ($i = 0; $i < $count; $i++) {
+        $data = array(
+            'title' => $events[$i],
+            'weight' => $weights[$i],
+        );
+        drupal_write_record("ticknet_slider_data", $data, array('title'));
+    }
+//    dprint_r($weights);
+    $core = array('cache_block');
+    $cache_tables = array_merge(module_invoke_all('flush_caches'), $core);
+    foreach ($cache_tables as $table) {
+        cache_clear_all('*', $table, TRUE);
+    }
+    drupal_json(array(
+            )
+    );
+}

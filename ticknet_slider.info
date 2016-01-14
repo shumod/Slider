@@ -1,0 +1,7 @@
+; $Id$
+name = ticknet_slider
+description = jQuery slider block
+dependencies[] = upload
+package = Tickets
+version = 6.0
+core = 6.x

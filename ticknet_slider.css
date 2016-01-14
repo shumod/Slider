@@ -1,0 +1,117 @@
+/*#bodyedit-wrapper { display:none; }*/
+.block-ticknet_slider,#slider-preview {
+    position: relative;
+    clear: both;
+    width: 620px;
+    height: 218px;
+    margin: 0;
+}
+/*.top-slider{
+    padding: 0;
+    position: relative;
+    clear: both;
+    margin-bottom: 10px;
+}*/
+.top-slider{
+    position: absolute;
+    top: 10px;
+    left: 0;
+}
+.slider-image{
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.bottom-background,.slider-bottom{
+    position: absolute;
+    top: 173px;
+    left: 0;
+    z-index: 1;
+}
+.bottom-background{
+    background-color: #fff;
+    opacity:0.6;
+}
+.slider-body{
+    height: 25px;
+    padding: 7px;
+    float: left;
+}
+.slider-body p{
+    margin: 2px 0;
+}
+.slider-button{
+    padding: 5px;
+    float: right;
+    z-index: 2;
+    background: url(button-slider.png) no-repeat  center 5px;
+    text-align: center;
+    margin-top: 7px;
+}
+.slider-button a{
+    font-size: 10px;
+    font-weight: bold;
+    color: #fff;
+    font-family: 'Verdana', sans-serif;
+}
+.slider-button a:hover{
+    color: #000;
+}
+.slider-body{
+    text-align: center;
+}
+.slider-body,.slider-body p,.slider-body span,.slider-body em,.slider-body strong {
+    font-family: Georgia;
+    font-size: 20px;
+}
+#slider-preview .slider-button{    
+    background: url(button-slider.png) no-repeat  center;
+    margin-top: 12px;
+}
+#edit-reorder{
+    margin: 10px 5px;
+}
+
+#ticknet-slider .draggable a.tabledrag-handle {
+    padding-left: 10px;
+}
+#ticknet-slider td+td{
+    padding: 0 0 0 20px;
+}
+/*============= Left & right botton ================*/
+.row {
+    position: absolute;
+    opacity: 0;
+    z-index: 100;
+    cursor: pointer;
+    background-color: #ddd;
+    border-radius: 5px;
+}
+.left-row {
+    background: #CCC url("previous.png") no-repeat top center;
+}
+.stop {
+    background: #CCC url("stop.png") no-repeat top center;
+}
+.start {
+    background: #CCC url("start.png") no-repeat top center;
+    display: none;
+}
+.right-row {
+    background: #CCC url("next.png") no-repeat top center;
+}
+.row:hover {
+    opacity: 0.5;
+}
+#slider-preview .row{
+    display: none;
+}
+.top-slider{
+    display: none;
+}
+#slider-preview .top-slider{
+    display: block;
+}
+.top-slider.current{
+    display: block;
+}
